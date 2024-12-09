@@ -54,7 +54,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         port=8001,
         timeout=None,
         key_press_delay=1,
-        name="SamsungTvRemote",
+        name="SamsungTvArt",
     ):
         super().__init__(
             host,

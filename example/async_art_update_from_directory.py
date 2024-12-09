@@ -554,7 +554,7 @@ class monitor_and_display:
         scan folder for new, deleted or updated files, but only when tv is in art mode
         '''
         try:
-            if self.tv.art_mode:
+            if await self.tv.is_artmode():
                 self.log.info('checking directory: {}{}'.format(self.folder, ' every {}'.format(self.get_time(self.period)) if self.period else ''))
                 files = self.get_folder_files()
                 await self.sync_file_list()

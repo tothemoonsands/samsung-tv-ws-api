@@ -9,12 +9,11 @@ import argparse
 from samsungtvws.async_art import SamsungTVAsyncArt
 from samsungtvws import exceptions
 
-logging.basicConfig(level=logging.INFO) #or logging.DEBUG to see messages
-
 def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Example async art Samsung Frame TV.')
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
     return parser.parse_args()
     
 async def image_callback(event, response):
@@ -22,6 +21,8 @@ async def image_callback(event, response):
 
 async def main():
     args = parseargs()
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+    logging.debug('debug mode')
     tv = SamsungTVAsyncArt(host=args.ip, port=8002)
     await tv.start_listening()
     
