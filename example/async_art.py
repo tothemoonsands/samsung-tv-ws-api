@@ -23,7 +23,9 @@ async def main():
     args = parseargs()
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
     logging.debug('debug mode')
-    tv = SamsungTVAsyncArt(host=args.ip, port=8002)
+    # Autosave token to file
+    token_file = os.path.dirname(os.path.realpath(__file__)) + '/tv-token.txt'
+    tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file=token_file)
     await tv.start_listening()
     
     #is art mode supported

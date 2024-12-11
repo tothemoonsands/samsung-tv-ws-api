@@ -10,12 +10,12 @@ import asyncio
 import contextlib
 import json
 import logging
-import ssl
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
 
 from websockets.client import WebSocketClientProtocol, connect
 from websockets.exceptions import ConnectionClosed
+from websockets.protocol import State
 
 from . import connection, exceptions, helper
 from .command import SamsungTVCommand, SamsungTVSleepCommand
@@ -166,4 +166,4 @@ class SamsungTVWSAsyncConnection(connection.SamsungTVWSBaseConnection):
         await asyncio.sleep(delay)
 
     def is_alive(self) -> bool:
-        return self.connection is not None and not self.connection.closed
+        return self.connection is not None and self.connection.state is State.OPEN
