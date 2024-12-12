@@ -54,7 +54,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         port=8001,
         timeout=None,
         key_press_delay=1,
-        name="SamsungTvArt",
+        name="SamsungTvRemote",
     ):
         super().__init__(
             host,
@@ -200,6 +200,9 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         
     async def is_artmode(self) -> bool:
         return await self.on() and self.art_mode
+        
+    async def in_artmode(self) -> bool:
+        return await self.on() and await self.get_artmode() == 'on'
         
     async def get_api_version(self):
         data = await self._send_art_request(

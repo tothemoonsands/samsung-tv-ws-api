@@ -24,14 +24,30 @@ async def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s',
                         level=logging.DEBUG) # or logging.INFO
     logging.debug('debug mode')
-    '''
-    tvr = SamsungTVWSAsyncRemote(host=args.ip, port=8002, token_file="token_file.txt")
-    await tvr.start_listening()
-    await tvr.close()
-    '''
-    tv = SamsungTVAsyncArt(host=args.ip, port=8002)
-    await tv.start_listening()
+    token_file = "token_file.txt"
+
+    if not os.path.isfile(token_file):
+        logging.info('fetching token')
+        tvr = SamsungTVWSAsyncRemote(host=args.ip, port=8002, token_file=token_file)
+        await tvr.start_listening()
+        await tvr.close()
+    else:
+        logging.info('token file exists')
+
+    try:
+        logging.info('opening art websocket with token')
+        tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file=token_file)
+        await tv.start_listening()
+    except Exception as e:
+        logging.exception(e)
+        logging.warning('trying with BOTH websockets open')
+        tvr = SamsungTVWSAsyncRemote(host=ip, port=8002, token_file=token_file)
+        await tvr.start_listening()
+        tv = SamsungTVAsyncArt(host=args.ip, port=8002)
+        await tv.start_listening()
+        await tvr.close()
     
+    logging.info('getting tv info')
     #is art mode supported
     supported = await tv.supported()
     logging.info('art mode is supported: {}'.format(supported))
@@ -45,6 +61,10 @@ async def main():
             #is art mode on
             art_mode = await tv.get_artmode()                  #calls websocket command to determine status
             logging.info('art mode is on: {}'.format(art_mode))
+            
+            #is tv on and in art mode
+            art_mode = await tv.in_artmode()                   #calls rest api and websocket command to determine status
+            logging.info('TV is in art mode: {}'.format(art_mode))
 
             #get api version 4.3.4.0 is new api, 2.03 is old api
             api_version = await tv.get_api_version()
