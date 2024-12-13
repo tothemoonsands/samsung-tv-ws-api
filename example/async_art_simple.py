@@ -9,9 +9,6 @@ import argparse
 from samsungtvws.async_art import SamsungTVAsyncArt
 from samsungtvws import exceptions
 
-from samsungtvws.async_remote import SamsungTVWSAsyncRemote
-from samsungtvws.remote import SendRemoteKey
-
 def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Example async art Samsung Frame TV.')
@@ -22,30 +19,12 @@ def parseargs():
 async def main():
     args = parseargs()
     logging.basicConfig(format='%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s',
-                        level=logging.DEBUG) # or logging.INFO
+                        level=logging.DEBUG if args.debug else logging.INFO)
     logging.debug('debug mode')
-    token_file = "token_file.txt"
 
-    if not os.path.isfile(token_file):
-        logging.info('fetching token')
-        tvr = SamsungTVWSAsyncRemote(host=args.ip, port=8002, token_file=token_file)
-        await tvr.start_listening()
-        await tvr.close()
-    else:
-        logging.info('token file exists')
-
-    try:
-        logging.info('opening art websocket with token')
-        tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file=token_file)
-        await tv.start_listening()
-    except Exception as e:
-        logging.exception(e)
-        logging.warning('trying with BOTH websockets open')
-        tvr = SamsungTVWSAsyncRemote(host=ip, port=8002, token_file=token_file)
-        await tvr.start_listening()
-        tv = SamsungTVAsyncArt(host=args.ip, port=8002)
-        await tv.start_listening()
-        await tvr.close()
+    logging.info('opening art websocket with token')
+    tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file="token_file.txt")
+    await tv.start_listening()
     
     logging.info('getting tv info')
     #is art mode supported
@@ -60,7 +39,7 @@ async def main():
             
             #is art mode on
             art_mode = await tv.get_artmode()                  #calls websocket command to determine status
-            logging.info('art mode is on: {}'.format(art_mode))
+            logging.info('art mode is: {}'.format(art_mode))
             
             #is tv on and in art mode
             art_mode = await tv.in_artmode()                   #calls rest api and websocket command to determine status

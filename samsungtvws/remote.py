@@ -239,6 +239,12 @@ class SamsungTVWS(connection.SamsungTVWSConnection):
         )
         self._rest_api: Optional[rest.SamsungTVRest] = None
         self._app_list: Optional[List[Dict[str, Any]]] = None
+        if not self.token:
+            try:
+                self.open()
+                self.close()
+            except Exception as e:
+                _LOGGING.debug('Unable to connect to {} - may be off?'.format(host))
 
     def _ws_send(
         self,
@@ -329,6 +335,9 @@ class SamsungTVWS(connection.SamsungTVWSConnection):
         if self._rest_api is None:
             self._rest_api = rest.SamsungTVRest(self.host, self.port, self.timeout)
         return self._rest_api
+        
+    def on(self) -> bool:
+        return self._get_rest_api().rest_power_state()
 
     def rest_device_info(self) -> Dict[str, Any]:
         return self._get_rest_api().rest_device_info()
@@ -348,13 +357,13 @@ class SamsungTVWS(connection.SamsungTVWSConnection):
     def shortcuts(self) -> shortcuts.SamsungTVShortcuts:
         return shortcuts.SamsungTVShortcuts(self)
 
-    def art(self) -> art.SamsungTVArt:
+    def art(self, timeout=5) -> art.SamsungTVArt:
         return art.SamsungTVArt(
             self.host,
             token=self.token,
             token_file=self.token_file,
             port=self.port,
-            timeout=self.timeout,
+            timeout=timeout,
             key_press_delay=self.key_press_delay,
             name=self.name,
         )

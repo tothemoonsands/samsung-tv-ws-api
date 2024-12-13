@@ -21,6 +21,7 @@ import uuid
 from . import exceptions, helper
 from .command import SamsungTVCommand
 from .async_connection import SamsungTVWSAsyncConnection
+from .remote import SamsungTVWS
 from .event import D2D_SERVICE_MESSAGE_EVENT, MS_CHANNEL_READY_EVENT
 from .async_rest import SamsungTVAsyncRest
 from .helper import get_ssl_context
@@ -72,6 +73,13 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         self.session = None
         self.pending_requests = {}
         self.callbacks = {}
+        self.get_token()
+            
+    def get_token(self):
+        '''
+        Open and close remote control websocket to get/check token
+        '''
+        tv = SamsungTVWS(self.host, port=self.port, token=self.token, token_file=self.token_file, timeout=self.timeout)
 
     async def open(self):
         await super().open()
