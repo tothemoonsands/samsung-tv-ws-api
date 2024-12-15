@@ -402,7 +402,7 @@ class SamsungTVArt(SamsungTVWSConnection):
         return data["content_id"] if data else None
 
     def delete(self, content_id):
-        self.delete_list([content_id])
+        return self.delete_list([content_id])
 
     def delete_list(self, content_ids):
         content_id_list = []
