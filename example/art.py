@@ -56,8 +56,8 @@ def main():
             logging.info('artmode: {}'.format(info))
 
             # List the art available on the device
-            #info = tv.art().available()
-            #logging.info('available: {}'.format(info))
+            info = tv.art(10).available()                               #note the art(10) here sets the timeout to 10 seconds, not the normal 5 second timeout
+            logging.info('available: {}'.format(info))
             
             # get brightness
             info = tv.art().get_brightness()
@@ -95,10 +95,10 @@ def main():
             logging.info('current slideshow status: {}'.format(info))
             
             #upload file
-            filename = "IMG_0256.JPG"
+            filename = None # enter file name/path here eg "IMG_0256.JPG"
             content_id = None
             if filename:
-                content_id = tv.art().upload(filename)
+                content_id = tv.art(10).upload(filename)        #note the art(10) here sets the timeout to 10 seconds, not the normal 5 second timeout
                 content_id = os.path.splitext(content_id)[0]    #remove file extension if any (eg .jpg)
                 logging.info('uploaded {} to tv as {}'.format(filename, content_id))
 
