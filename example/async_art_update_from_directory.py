@@ -77,6 +77,7 @@ def parseargs():
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
     parser.add_argument('-f','--folder', action="store", type=str, default="./images", help='folder to load images from (default: %(default)s))')
     parser.add_argument('-m','--matte', action="store", type=str, default="none", help='default matte to use (default: %(default)s))')
+    parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-u','--update', action="store", type=float, default=0, help='slideshow update period (mins) 0=off (default: %(default)s))')
     parser.add_argument('-c','--check', action="store", type=int, default=60, help='how often to check for new art 0=run once (default: %(default)s))')
     parser.add_argument('-s','--sync', action='store_false', default=True, help='automatically syncronize (needs Pil library) (default: %(default)s))')
@@ -222,10 +223,7 @@ class monitor_and_display:
     
     allowed_ext = ['jpg', 'jpeg', 'png', 'bmp', 'tif']
     
-    def __init__(self, ip, folder, period=5, update_time=1440, include_fav=False, sync=True, matte='none', sequential=False, on=False):
-        # Autosave token to file
-        token_file = os.path.dirname(os.path.realpath(__file__)) + '/token_file.txt'
-   
+    def __init__(self, ip, folder, period=5, update_time=1440, include_fav=False, sync=True, matte='none', sequential=False, on=False, token_file=None):
         self.log = logging.getLogger('Main.'+__class__.__name__)
         self.debug = self.log.getEffectiveLevel() <= logging.DEBUG
         self.ip = ip
@@ -237,6 +235,8 @@ class monitor_and_display:
         self.matte = matte
         self.sequential = sequential
         self.on = on
+        # Autosave token to file
+        self.token_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), token_file) if token_file else token_file
         self.program_data_path = './uploaded_files.json'
         self.uploaded_files = {}
         self.fav = set()
@@ -244,7 +244,7 @@ class monitor_and_display:
         self.start = time.time()
         self.current_content_id = None
         self.pil = PIL_methods(self)
-        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=token_file)
+        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=self.token_file)
         try:
             #doesn't work in Windows
             asyncio.get_running_loop().add_signal_handler(SIGINT, self.close)
@@ -557,7 +557,7 @@ class monitor_and_display:
         scan folder for new, deleted or updated files, but only when tv is in art mode
         '''
         try:
-            if await self.tv.is_artmode():
+            if await self.tv.in_artmode():
                 self.log.info('checking directory: {}{}'.format(self.folder, ' every {}'.format(self.get_time(self.period)) if self.period else ''))
                 files = self.get_folder_files()
                 await self.sync_file_list()
@@ -609,7 +609,8 @@ async def main():
                                 sync            = args.sync,
                                 matte           = args.matte,
                                 sequential      = args.sequential,
-                                on              = args.on)
+                                on              = args.on,
+                                token_file      = args.token_file)
     await mon.start_monitoring()
 
 
