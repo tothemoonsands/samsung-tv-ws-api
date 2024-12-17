@@ -223,6 +223,9 @@ class monitor_and_display:
     allowed_ext = ['jpg', 'jpeg', 'png', 'bmp', 'tif']
     
     def __init__(self, ip, folder, period=5, update_time=1440, include_fav=False, sync=True, matte='none', sequential=False, on=False):
+        # Autosave token to file
+        token_file = os.path.dirname(os.path.realpath(__file__)) + '/token_file.txt'
+   
         self.log = logging.getLogger('Main.'+__class__.__name__)
         self.debug = self.log.getEffectiveLevel() <= logging.DEBUG
         self.ip = ip
@@ -241,7 +244,7 @@ class monitor_and_display:
         self.start = time.time()
         self.current_content_id = None
         self.pil = PIL_methods(self)
-        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002)
+        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=token_file)
         try:
             #doesn't work in Windows
             asyncio.get_running_loop().add_signal_handler(SIGINT, self.close)
