@@ -184,4 +184,4 @@ class SamsungTVEncryptedWSAsyncRemote:
         LOGGER.debug("Connection closed")
 
     def is_alive(self) -> bool:
-        return self._connection is not None nd self.connection.state is State.OPEN
+        return self._connection is not None and self.connection.state is State.OPEN
