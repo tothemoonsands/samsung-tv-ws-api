@@ -96,19 +96,21 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
             raise exceptions.ConnectionFailure(response)
 
         return self.connection
-        
+
     async def close(self):
-        if self.session and not self.session.closed:
+        if self.session:
             await self.session.close()
         await super().close()
-        
+   
     async def start_listening(self) -> None:
         # Override base class to process events
-        await super().start_listening(self.process_event)
-        try:
-            await self.get_artmode()
-        except AssertionError:
-            pass
+        if not self.is_alive():
+            await self.open()
+        if await super().start_listening(self.process_event):
+            try:
+                await self.get_artmode()
+            except AssertionError:
+                pass
             
     def get_uuid(self):
         self.art_uuid = str(uuid.uuid4())
@@ -140,6 +142,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
             request_data["id"] = self.get_uuid()            #old api
         request_data["request_id"] = request_data["id"]     #new api
         self.pending_requests[wait_for_event or request_data["id"]] = asyncio.Future()
+        await self.start_listening()
         await self.send_command(ArtChannelEmitCommand.art_app_request(request_data))
         return await self.wait_for_response(wait_for_event or request_data["id"])
         
@@ -187,24 +190,22 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         if self._rest_api is None:
             self._rest_api = SamsungTVAsyncRest(host=self.host, port=self.port, session=self.session)
         return self._rest_api
+        
+    async def _get_device_info(self):
+        try:
+            await asyncio.sleep(0.1)    #do not hit rest api to frequently
+            return await self._get_rest_api().rest_device_info()
+        except Exception as e:
+            pass
+        return {}
 
     async def supported(self) -> bool:
-        try:
-            await asyncio.sleep(0.1)    #do not hit rest api to frequently
-            data = await self._get_rest_api().rest_device_info()
-            return data.get("device", {}).get("FrameTVSupport") == "true"
-        except Exception as e:
-            pass
-        return False
+        data = await self._get_device_info()
+        return data.get("device", {}).get("FrameTVSupport") == "true"
         
     async def on(self) -> bool:
-        try:
-            await asyncio.sleep(0.1)    #do not hit rest api to frequently
-            data = await self._get_rest_api().rest_device_info()
-            return data.get("device", {}).get('PowerState', 'off') == 'on'
-        except Exception as e:
-            pass
-        return False
+        data = await self._get_device_info()
+        return data.get("device", {}).get('PowerState', 'off') == 'on'
         
     async def is_artmode(self) -> bool:
         return await self.on() and self.art_mode

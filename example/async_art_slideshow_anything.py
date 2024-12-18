@@ -41,6 +41,7 @@ def parseargs():
     parser = argparse.ArgumentParser(description='Async Slideshow Any art on Samsung TV.')
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
     parser.add_argument('-f','--folder', action="store", type=str, default="./slideshow", help='folder to store images in (default: %(default)s))')
+    parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-c','--check', action="store", type=int, default=60, help='how often to check for new art 0=run once (default: %(default)s))')
     parser.add_argument('-u','--update', action="store", type=float, default=2, help='random update period (mins) 0.25 minnimum (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
@@ -64,18 +65,20 @@ class slideshow:
         type=artDataMixin,
     )
     
-    def __init__(self, ip, folder, period=60, random_update=1440):
+    def __init__(self, ip, folder, period=60, random_update=1440, token_file=None):
         self.log = logging.getLogger('Main.'+__class__.__name__)
         self.debug = self.log.getEffectiveLevel() <= logging.DEBUG
         self.ip = ip
         self.random_update = max(0.25, random_update)*60   #convert minutes to seconds
         self.period = int(min(60, self.random_update)) if period else 0
+        # Autosave token to file
+        self.token_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), token_file) if token_file else token_file
         self.category.SLIDESHOW.dir = folder
         self.category.MY_PHOTOS.dir = os.path.join(folder, self.category.MY_PHOTOS.dir_name)
         self.category.FAVOURITES.dir = os.path.join(folder, self.category.FAVOURITES.dir_name)
         self.api_version = 1
         self.start = time.time()
-        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002)
+        self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=self.token_file)
         
         self.log.info('check thumbnails {}, slideshow rotation every: {}'.format('every {}s'.format(self.period) if self.period else 'once', datetime.timedelta(seconds = self.random_update)))
         try:
@@ -234,10 +237,7 @@ class slideshow:
         start = True
         while True:
             try:
-                if not self.tv.is_alive():
-                    self.log.warning('reconnecting websocket')
-                    await self.tv.start_listening()
-                if await self.tv.is_artmode():
+                if await self.tv.in_artmode():
                     self.log.info('time to next rotation: {}'.format(self.get_countdown()))
                     if not await self.do_random_update() and not start:
                         await self.download_thmbnails()
@@ -264,7 +264,8 @@ async def main():
     mon = slideshow(args.ip,
                     os.path.normpath(args.folder),
                     period          = args.check,
-                    random_update   = args.update)
+                    random_update   = args.update,
+                    token_file      = args.token_file)
     await mon.start_slideshow()
 
 

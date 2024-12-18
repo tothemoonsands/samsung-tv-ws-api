@@ -13,6 +13,7 @@ def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Example async art Samsung Frame TV.')
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
     return parser.parse_args()
     
@@ -21,10 +22,11 @@ async def image_callback(event, response):
 
 async def main():
     args = parseargs()
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s',
+                        level=logging.DEBUG if args.debug else logging.INFO)
     logging.debug('debug mode')
     # Autosave token to file
-    token_file = os.path.dirname(os.path.realpath(__file__)) + '/tv-token.txt'
+    token_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.token_file)
     tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file=token_file)
     await tv.start_listening()
     

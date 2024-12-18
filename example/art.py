@@ -12,6 +12,7 @@ def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Example art Samsung Frame TV.')
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
     return parser.parse_args()
 
@@ -21,11 +22,11 @@ def main():
                         level=logging.DEBUG if args.debug else logging.INFO)
     logging.debug('debug mode')
     
-    # Example showing different token files for different tv's, with default of "token_file.txt"
+    # Example showing different token files for different tv's, with default of "token_file.txt" from args.token_file
     tokens = {  '192.168.100.32' : "token_file1.txt",
                 '192.168.100.73' : "token_file2.txt"
              }
-    token_file = tokens.get(args.ip, "token_file.txt")
+    token_file = tokens.get(args.ip, args.token_file)
 
     # Normal constructor (will ask for connection every time)
     #tv = SamsungTVWS(host=args.ip)
