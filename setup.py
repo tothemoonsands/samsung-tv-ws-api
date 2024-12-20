@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from setuptools import find_packages, setup
-
+exec(open('samsungtvws/version.py').read())
 
 def readme():
     with open("README.md") as readme_file:
@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name="samsungtvws",
-    version="2.6.0",
+    version=__version__,
     description="Samsung Smart TV WS API wrapper",
     long_description=readme(),
     long_description_content_type="text/markdown",

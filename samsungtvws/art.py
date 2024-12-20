@@ -397,6 +397,7 @@ class SamsungTVArt(SamsungTVWSConnection):
         art_socket.send(len(header).to_bytes(4, "big"))
         art_socket.send(header.encode("ascii"))
         art_socket.send(file)
+        #_LOGGING.info('sending: header length: {}, header: {}'.format(len(header).to_bytes(4, "big").hex(), header.encode("ascii")))
 
         data = self.wait_for_response("image_added")
         return data["content_id"] if data else None

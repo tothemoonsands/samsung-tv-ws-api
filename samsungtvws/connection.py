@@ -24,6 +24,7 @@ from .event import (
     MS_CHANNEL_UNAUTHORIZED,
     MS_ERROR_EVENT,
 )
+from .version import __version__
 
 _LOGGING = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class SamsungTVWSBaseConnection:
         self.endpoint = endpoint
         self.connection: Optional[Any] = None
         self._recv_loop: Optional[Any] = None
+        _LOGGING.debug('version: {}'.format(__version__))
 
     def _is_ssl_connection(self) -> bool:
         return self.port == 8002

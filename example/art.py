@@ -6,11 +6,11 @@ import sys
 
 sys.path.append("../")
 
-from samsungtvws import SamsungTVWS, exceptions
+from samsungtvws import SamsungTVWS, exceptions, __version__
 
 def parseargs():
     # Add command line argument parsing
-    parser = argparse.ArgumentParser(description='Example art Samsung Frame TV.')
+    parser = argparse.ArgumentParser(description='Example art Samsung Frame TV Version: {}'.format(__version__))
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
@@ -96,7 +96,7 @@ def main():
             logging.info('current slideshow status: {}'.format(info))
             
             #upload file
-            filename = None # enter file name/path here eg "IMG_0256.JPG"
+            filename = "drwmrk_cropped2.jpeg"#None # enter file name/path here eg "IMG_0256.JPG"
             content_id = None
             if filename:
                 content_id = tv.art(10).upload(filename)        #note the art(10) here sets the timeout to 10 seconds, not the normal 5 second timeout

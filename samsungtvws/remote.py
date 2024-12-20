@@ -239,7 +239,10 @@ class SamsungTVWS(connection.SamsungTVWSConnection):
         )
         self._rest_api: Optional[rest.SamsungTVRest] = None
         self._app_list: Optional[List[Dict[str, Any]]] = None
+        year = self._get_rest_api().get_model_year()
         if not self.token:
+            self.token = self._get_token()
+        if not self.token and year >= 24:   #initialize token now for 2024+ tv's
             try:
                 self.open()
                 self.close()
