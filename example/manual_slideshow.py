@@ -70,10 +70,10 @@ class Slideshow:
         Next or previous image in the sequence
         '''
         try:
-            new_index = self.index+1 if char == 'n' else self.index-1
+            new_index = self.index + (1 if char == 'n' else -1)
             # wrap around
             new_index = new_index % len(self.sequence)
-            self.log.info('current index: {} new index: {} max: {}'.format(self.index, new_index, len(self.sequence)-1))
+            self.log.debug('current index: {} new index: {} max: {}'.format(self.index, new_index, len(self.sequence)-1))
             next_id = self.sequence[new_index]
             # Select new image
             self.tv.art().select_image(next_id)
