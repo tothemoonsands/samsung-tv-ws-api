@@ -22,13 +22,8 @@ class Slideshow:
         
         # Autosave token to file
         #self.tv = SamsungTVWS(host=args.ip, port=8002, token_file=args.token_file)
-        self.sequence = self.get_tv_content()
-        self.current = self.get_current_art()
-        try:
-            self.index = self.sequence.index(self.current)
-            self.input_loop()
-        except ValueError as e:
-            self.log.critical('Current art not found: {}'.format(e))
+        self.get_tv_content()
+        self.input_loop()
         
     def input_loop(self):
         '''
@@ -45,25 +40,15 @@ class Slideshow:
         '''
         gets content_id list of category - either My Photos (MY-C0002) or Favourites (MY-C0004) from tv
         use 10 second timeout in case tv has a lot of content (tv.art(10))
-        '''
-        try:
-            result = [v['content_id'] for v in self.tv.art(10).available(category)]
-        except AssertionError:
-            self.log.warning('failed to get contents from TV')
-            result = None
-        return result
-        
-    def get_current_art(self):
-        '''
         gets content_id for current art
+        and current index
         '''
         try:
-            art = self.tv.art().get_current()
-            result = art['content_id']
-        except AssertionError:
-            self.log.warning('failed to get current art from TV')
-            result = None
-        return result
+            self.sequence = [v['content_id'] for v in self.tv.art(10).available(category)]
+            self.current = self.tv.art().get_current()['content_id']
+            self.index = self.sequence.index(self.current)
+        except (AssertionError, ValueError) as e:
+            self.log.warning('failed to get contents from TV {}'.format(e))
         
     def advance_frame_image(self, char='n'):
         '''
@@ -76,7 +61,7 @@ class Slideshow:
             self.log.debug('current index: {} new index: {} max: {}'.format(self.index, new_index, len(self.sequence)-1))
             next_id = self.sequence[new_index]
             # Select new image
-            self.tv.art().select_image(next_id)
+            #self.tv.art().select_image(next_id)
             self.log.info(f"Advanced from {self.sequence[self.index]} to {next_id}")
             self.index = new_index
             return True
