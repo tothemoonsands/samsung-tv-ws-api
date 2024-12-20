@@ -61,7 +61,7 @@ class Slideshow:
             self.log.debug('current index: {} new index: {} max: {}'.format(self.index, new_index, len(self.sequence)-1))
             next_id = self.sequence[new_index]
             # Select new image
-            #self.tv.art().select_image(next_id)
+            self.tv.art().select_image(next_id)
             self.log.info(f"Advanced from {self.sequence[self.index]} to {next_id}")
             self.index = new_index
             return True
