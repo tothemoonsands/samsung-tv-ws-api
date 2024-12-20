@@ -22,8 +22,8 @@ class Slideshow:
         
         # Autosave token to file
         #self.tv = SamsungTVWS(host=args.ip, port=8002, token_file=args.token_file)
-        self.get_tv_content()
-        self.input_loop()
+        if self.get_tv_content():
+            self.input_loop()
         
     def input_loop(self):
         '''
@@ -34,7 +34,8 @@ class Slideshow:
         while char != 'q' :
             char = input('n,p,q >> ').lower()
             if char in self.input_chars:
-                self.advance_frame_image(char)
+                if not self.advance_frame_image(char):
+                    break
         
     def get_tv_content(self, category='MY-C0002'):
         '''
@@ -47,8 +48,10 @@ class Slideshow:
             self.sequence = [v['content_id'] for v in self.tv.art(10).available(category)]
             self.current = self.tv.art().get_current()['content_id']
             self.index = self.sequence.index(self.current)
+            return True
         except (AssertionError, ValueError) as e:
             self.log.warning('failed to get contents from TV {}'.format(e))
+        return False
         
     def advance_frame_image(self, char='n'):
         '''
@@ -65,10 +68,9 @@ class Slideshow:
             self.log.info(f"Advanced from {self.sequence[self.index]} to {next_id}")
             self.index = new_index
             return True
-            
         except Exception as e:
             self.log.error(f"Error changing image: {e}")
-            return False
+        return False
 
 def main():
     args = parseargs()
