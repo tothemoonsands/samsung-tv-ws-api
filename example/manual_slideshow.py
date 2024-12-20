@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import logging
-import os
-import sys
-
-sys.path.append("../")
 
 from samsungtvws import SamsungTVWS, exceptions, __version__
 
@@ -51,7 +47,7 @@ class Slideshow:
         use 10 second timeout in case tv has a lot of content (tv.art(10))
         '''
         try:
-            result = [v['content_id'] for v in self.tv.art().available(category)]
+            result = [v['content_id'] for v in self.tv.art(10).available(category)]
         except AssertionError:
             self.log.warning('failed to get contents from TV')
             result = None
