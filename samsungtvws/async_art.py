@@ -136,7 +136,8 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
     async def _send_art_request(
         self,
         request_data: Dict[str, Any],
-        wait_for_event: Optional[str] = None
+        wait_for_event: Optional[str] = None,
+        timeout: int = 2
     ) -> Optional[Dict[str, Any]]:
         if not request_data.get("id"):
             request_data["id"] = self.get_uuid()            #old api
@@ -144,7 +145,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         self.pending_requests[wait_for_event or request_data["id"]] = asyncio.Future()
         await self.start_listening()
         await self.send_command(ArtChannelEmitCommand.art_app_request(request_data))
-        return await self.wait_for_response(wait_for_event or request_data["id"])
+        return await self.wait_for_response(wait_for_event or request_data["id"], timeout)
         
     async def process_event(self, event=None, response=None):
         if event == D2D_SERVICE_MESSAGE_EVENT:
@@ -231,12 +232,13 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         assert data
         return data
 
-    async def available(self, category=None):
+    async def available(self, category=None, timeout=2):
         '''
         category is 'MY-C0004' or 'MY-C0002' where 4 is favourites, 2 is my pictures, and 8 is store
         '''
         data = await self._send_art_request(
-            {"request": "get_content_list", "category": category}
+            {"request": "get_content_list", "category": category},
+            timeout=timeout
         )
         assert data
         return [ v for v in json.loads(data["content_list"]) if v['category_id'] == category] if category else json.loads(data["content_list"])
