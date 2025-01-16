@@ -29,7 +29,7 @@ async def main():
     logging.info('opening art websocket with token')
     token_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.token_file)
     tv = SamsungTVAsyncArt(host=args.ip, port=8002, token_file=token_file)
-    
+
     logging.info('getting tv info')
     #is art mode supported
     supported = await tv.supported()
@@ -89,7 +89,7 @@ async def main():
                     except ResponseError:
                         logging.warning('Unable to change mat to {} for {} ({}x{})'.format(target_matte_type, art["content_id"], art["width"], art["height"]))
             except KeyError:
-                logging.warning('no mat for {}'.format(art))
+                logging.warning('no mat for {}'.format(art))    
                 
     await tv.close()
 

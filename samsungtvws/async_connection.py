@@ -23,6 +23,7 @@ from .event import (
     IGNORE_EVENTS_AT_STARTUP,
     MS_CHANNEL_CONNECT_EVENT,
     MS_CHANNEL_UNAUTHORIZED,
+    MS_CHANNEL_TIMEOUT
 )
 from .helper import get_ssl_context
 
@@ -72,6 +73,8 @@ class SamsungTVWSAsyncConnection(connection.SamsungTVWSBaseConnection):
         if event != MS_CHANNEL_CONNECT_EVENT:
             # Unexpected event received during connection routine
             await self.close()
+            if event == MS_CHANNEL_TIMEOUT:
+                _LOGGING.debug("connection not accepted on TV, or token missing/incorrect")
             raise exceptions.ConnectionFailure(response)
 
         self._check_for_token(response)
