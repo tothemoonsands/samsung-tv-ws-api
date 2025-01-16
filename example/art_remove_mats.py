@@ -36,8 +36,11 @@ if target_matte_type not in matte_types:
 available_art = tv.art().available()
 
 for art in available_art:
-    if art["matte_id"] != target_matte_type:
-        logging.info(
-            "Setting matte to {} for {}".format(target_matte_type, art["content_id"])
-        )
-        tv.art().change_matte(art["content_id"], target_matte_type)
+    try:
+        if art["matte_id"] != target_matte_type:
+            logging.info(
+                "Setting matte to {} for {}".format(target_matte_type, art["content_id"])
+            )
+            tv.art().change_matte(art["content_id"], target_matte_type)
+    except KeyError:
+        logging.warning('no mat for {}'.format(art))

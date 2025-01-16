@@ -17,6 +17,7 @@ def parseargs():
     parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-m','--mat', action="store", type=str, default='none', help='landscape mat to apply to art (default: %(default)s))')
+    parser.add_argument('-A','--all', action='store_true', default=False, help='Apply to all art - usually just My-Photos (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
     return parser.parse_args()
         
@@ -58,8 +59,8 @@ async def main():
                     )
                     sys.exit(1)
 
-        # List the art available in My-Photos on the device
-        available_art = await tv.available('MY-C0002', timeout=10)#await tv.available(timeout=10) #if you want everything
+        # List the art available in My-Photos on the device (or all art if -A selected)
+        available_art = await tv.available(None if args.all else 'MY-C0002', timeout=10)
         
         for art in available_art:
             try:
