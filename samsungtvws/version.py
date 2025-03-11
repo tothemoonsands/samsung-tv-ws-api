@@ -4,6 +4,7 @@
 # 3) we can import it into your module module
 
 # version 3.0.0 N Waterton Dec 2025 - added version number.
-# version 3.0.1 N Waterton  16th Jan 2025 added async_art_remove_mats.py example, fixed art_remove_mats.py
+# version 3.0.1 N Waterton 16th Jan 2025 added async_art_remove_mats.py example, fixed art_remove_mats.py
+# version 3.0.2 N Waterton 11th March 2025 - changed image compare function in async_update_from_directory.py, updated README and setup.py
 
-__version__ = '3.0.1'
+__version__ = '3.0.2'

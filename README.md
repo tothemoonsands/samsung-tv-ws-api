@@ -38,6 +38,8 @@ Now run install:
 ```
 python ./setup.py install
 ```
+You can substitute `develop` for `install` if you want to install in developer mode.   
+**NOTE:** setuptools is deprecated (in favour of pip), but you can still use it for now. 
 
 You can also install directly from git using pip (your command may be `pip` or `pip3` depending on your setup):
 
