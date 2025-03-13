@@ -214,7 +214,6 @@ class PIL_methods:
         '''
         img1 = img1.convert('L').resize((384, 216)).filter(ImageFilter.GaussianBlur(radius=2))
         img2 = img2.convert('L').resize((384, 216)).filter(ImageFilter.GaussianBlur(radius=2))
-        img3 = ImageChops.subtract(img1, img2)
         img3 = ImageChops.difference(img1, img2)    #updated 11/3/25 per suggestion in issue #11
         diff = sum(list(img3.getdata()))/(384*216)  #normalize
         equal_content = diff <= 1.0                 #pick a threshhold

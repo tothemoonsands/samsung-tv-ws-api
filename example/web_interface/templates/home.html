@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript">
+    //show modal, and trigger display on TV using ajax fetch
+    const timeout = 10000; //modeal timeout in mS
+    
+    //refresh page
+    setTimeout("window.open(self.location, '_self');", 5*60000); //NOTE: period is passed in milliseconds
+    
+    //scroll to top on refresh
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    document.body.scrollTop = 0; // For Safari
+    
+    function showImage(name, modalWindow) {
+        console.log("Show Image on TV: ", name);
+        const url = '/show_image/' + name;
+        fetch(url).catch((error) => console.log('Fetch error: ', error))
+        var myModal = new bootstrap.Modal(document.getElementById(modalWindow), {})
+        myModal.show()
+        setTimeout(function(){
+            myModal.hide()
+        }, timeout);
+    }
+</script>
+{% endblock %}
+{% block content %}
+<h5 class="pb-2 mt-4 mb-2 border-bottom text-center">Click on a Picture</h5>
+<div class="container" >
+  <div class="row row-cols-2"> <!-- Number of columns here -->
+  {% for name,value in data.items() %}
+    <div class="col">
+      <button type="button" onclick="showImage('{{name}}', 'textModal-{{value.id}}')" class="btn btn-primary" >
+        <img class="img-fluid img-thumbnail" src="{{ url_for('static',filename=name) }}" alt="{{ name }}" >
+      </button>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="textModal-{{value.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <img src="{{ url_for('static',filename=name) }}" width=20% >&nbsp;
+            <h5 class="modal-title" id="itemLabel">{{ value.header }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="modal-body">
+            {% if value.description is defined %}
+              <p>{{ value.description }}</p>
+            {% endif %}
+            {{ value.details }}
+          </div>
+          {% if value.location is defined and value.time is defined %}
+            <div class="modal-footer">
+              Location: {{ value.location }} Time: {{ value.time }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <!-- End Modal -->
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}
