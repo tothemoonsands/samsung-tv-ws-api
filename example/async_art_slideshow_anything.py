@@ -111,7 +111,7 @@ class slideshow:
     async def get_tv_content(self, category='MY-C0002'):
         result = []
         try:
-            result = [v['content_id'] for v in await self.tv.available(category)]
+            result = [v['content_id'] for v in await self.tv.available(category, timeout=10)]
         except AssertionError:
             pass
         return result

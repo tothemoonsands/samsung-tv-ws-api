@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# fully async example program to monitor a folder and upload/display on Frame TV using a web page for control
+# fully async example library to monitor a folder and upload/display on Frame TV using a web page for control
 # NOTE: install Pillow (pip install Pillow) to automatically syncronize art on TV wth uploaded_files.json.
-# this program is based on async_art_upload_from_directory.py, but with an added web front end based on flask.
+# this library is based on async_art_upload_from_directory.py, but with an added web front end based on flask.
+# do not run it directly, use web_interface.py instead
 
 '''
 This program will read the files in a designated folder (with allowed extensions) and upload them to your TV. It keeps track of which files correspond to what
@@ -21,32 +22,7 @@ If the on (-O) option is selected, the program wil exit if the TV is not on (TV 
 If the sequential (-S) option is selected, then the slideshow is sequential, not random (random is the default)
 The default checking period is 60 seconds or the update period whichever is less.
 
-Example:
-    1) Your TV is used to display one image, that changes every day, you have a program that grabs the image and puts it in a folder. The image always has the same name.
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 0
-       to update the image on the Tv after the script that grabs the file runs
-       If you are unsure if the TV will be on when you run the program
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 0 -O
-       or
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 60
-       and leave it running
-       
-    2) You use your TV to display your own artwork, you want a slideshow that displays a random artwork every minute, but want to add/remove art from a network share
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path_to_share> -u 1
-       and leave it running. Add/remove art from the network share folder to include it/remove it from the slideshow.
-       If you want an update every 15 seconds
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path_to_share> -u 0.25
-       
-    3) you have artwork on the TV marked as "favourites", but want to inclue your own artwork from a folder in a random slideshow that updates once a day
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 3600 -u 1440 -F
-       and leave it running. Add/remove art from the folder to include it/remove it from the slideshow.
-       
-    4) You have some standard art uploaded to your TV, that you slideshow from the TV, but want to add seasonal artworks to the slideshow that you change from time to time.
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 3600
-       and leave it running. Add/remove art from the folder to include it/remove it from the slideshow.
-       or
-       run ./async_art_update_from_folder.py <tv_ip> -f <folder_path> -c 0 -O
-       after updating the files in the folder
+It is loaded by the web_interface.py program
 '''
 
 import sys
@@ -58,7 +34,6 @@ import json
 import asyncio
 import time
 import datetime
-import argparse
 from signal import SIGTERM, SIGINT
 HAVE_PIL = False
 try:
@@ -71,24 +46,6 @@ from samsungtvws.async_art import SamsungTVAsyncArt
 from samsungtvws import __version__
 
 logging.basicConfig(level=logging.INFO)
-
-
-def parseargs():
-    # Add command line argument parsing
-    parser = argparse.ArgumentParser(description='Async Upload images to Samsung TV Version: {}'.format(__version__))
-    parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
-    parser.add_argument('-p','--port', action="store", type=int, default=5000, help='port for web page interface (default: %(default)s))')
-    parser.add_argument('-f','--folder', action="store", type=str, default="./images", help='folder to load images from (default: %(default)s))')
-    parser.add_argument('-m','--matte', action="store", type=str, default="none", help='default matte to use (default: %(default)s))')
-    parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
-    parser.add_argument('-u','--update', action="store", type=float, default=0, help='slideshow update period (mins) 0=off (default: %(default)s))')
-    parser.add_argument('-c','--check', action="store", type=int, default=60, help='how often to check for new art 0=run once (default: %(default)s))')
-    parser.add_argument('-s','--sync', action='store_false', default=True, help='automatically syncronize (needs Pil library) (default: %(default)s))')
-    parser.add_argument('-S','--sequential', action='store_true', default=False, help='sequential slide show (default: %(default)s))')
-    parser.add_argument('-O','--on', action='store_true', default=False, help='exit if TV is off (default: %(default)s))')
-    parser.add_argument('-F','--favourite', action='store_true', default=False, help='include favourites in rotation (default: %(default)s))')
-    parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
-    return parser.parse_args()
     
 class PIL_methods:
     
@@ -226,13 +183,14 @@ class monitor_and_display:
     
     allowed_ext = ['jpg', 'jpeg', 'png', 'bmp', 'tif']
     
-    def __init__(self, ip, folder, period=5, update_time=1440, include_fav=False, sync=True, matte='none', sequential=False, on=False, token_file=None):
+    def __init__(self, ip, folder, period=5, update_time=1440, display_for=120, include_fav=False, sync=True, matte='none', sequential=False, on=False, token_file=None):
         self.log = logging.getLogger('Main.'+__class__.__name__)
         self.debug = self.log.getEffectiveLevel() <= logging.DEBUG
         self.ip = ip
         self.folder = folder
         self.update_time = int(max(0, update_time*60))   #convert minutes to seconds
-        self.period = min(max(5, period), self.update_time) if self.update_time > 0 else period
+        self.period = min(max(5, period), self.update_time, display_for) if self.update_time > 0 else period
+        self.display_for = display_for
         self.include_fav = include_fav
         self.sync = sync
         self.matte = matte
@@ -245,9 +203,9 @@ class monitor_and_display:
         self.fav = set()
         self.api_version = 0
         self.start = time.time()
-        self.skip = False
+        self.skip = time.time() - self.display_for
         self.current_content_id = None
-        self.queue = asyncio.Queue(1)
+        self.loop = None
         self.pil = PIL_methods(self)
         self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=self.token_file)
         try:
@@ -261,6 +219,7 @@ class monitor_and_display:
         '''
         program entry point
         '''
+        self.loop = asyncio.get_running_loop()
         if self.on and not await self.tv.on():
             self.log.info('TV is off, exiting')
         else:
@@ -333,7 +292,7 @@ class monitor_and_display:
         gets content_id list of category - either My Photos (MY-C0002) or Favourites (MY-C0004) from tv
         '''
         try:
-            result = [v['content_id'] for v in await self.tv.available(category)]
+            result = [v['content_id'] for v in await self.tv.available(category, timeout=10)]
         except AssertionError:
             self.log.warning('failed to get contents from TV')
             result = None
@@ -548,7 +507,7 @@ class monitor_and_display:
         
     async def change_art(self, new_content_id=None):
         '''
-        update displayed art on tv, it next_art is a different content_id to current
+        update displayed art on tv, if next_art is a different content_id to current
         '''
         content_id = new_content_id or self.get_next_art()
         if content_id and content_id != self.current_content_id:
@@ -556,29 +515,26 @@ class monitor_and_display:
             await self.tv.select_image(content_id)
             self.current_content_id = content_id
         else:
-            self.log.info('skipping art update, as new content_id: {} is the same'.format(content_id))
+            self.log.info('skipping art update, as new content_id: {} is the same as currently shown'.format(content_id))
             
-    def add_to_queue(self, filename):
-        if not self.queue.full():
-            self.log.info('adding: {} to queue'.format(filename))
-            self.queue.put_nowait(filename)
+    def display_file(self, filename):
+        '''
+        Display file (jpg/png) called from another thread - ie web_interface
+        '''
+        if self.loop:
+            self.log.info('displaying: {}'.format(filename))
+            asyncio.run_coroutine_threadsafe(self.set_image_from_filename(filename), self.loop)
         else:
-            self.log.warning('not adding: {} to queue, as queue is full'.format(filename))
-        
-    async def process_queue(self):
-        while True:
-            filename = await self.queue.get()
-            self.log.info('processing: {} from queue'.format(filename))
-            await self.set_image_from_filename(filename)
-            self.queue.task_done()
+            self.log.warning('no running loop to display: {}'.format(filename))
             
     async def set_image_from_filename(self, filename):
-        if self.uploaded_files.get(filename, {}).get('content_id'):
-            self.skip = True
+        try:
             content_id = self.uploaded_files[filename]['content_id']
+            self.skip = time.time()
+            self.start = 0
             await self.change_art(content_id)
-        else:
-            self.log.warning('file: {} not found'.format(filename))
+        except Exception:
+            self.log.warning('file: {} not found on TV'.format(filename))
     
     async def check_dir(self):
         '''
@@ -593,8 +549,7 @@ class monitor_and_display:
                 await self.add_files(files)
                 await self.update_files(files)
                 #update tv art if enabled by timer or skip if manually selected
-                if self.skip:
-                    self.skip = False
+                if time.time() - self.skip <= self.display_for:
                     return
                 await self.update_art_timer()
                 if len(self.get_content_ids()) == 1:
@@ -610,7 +565,6 @@ class monitor_and_display:
         initialize, check directory for changed files and update
         '''
         await self.initialize()
-        asyncio.create_task(self.process_queue())
         while True:
             await self.check_dir()
             if self.period == 0:
@@ -620,32 +574,7 @@ class monitor_and_display:
 async def main():
     global log
     log = logging.getLogger('Main')
-    args = parseargs()
-    log.info('Program Started')
-    if args.debug:
-        log.setLevel(logging.DEBUG)
-        logging.getLogger().setLevel(logging.DEBUG)
-    log.debug('Debug mode')
-    
-    args.folder = os.path.normpath(args.folder)
-    
-    if not os.path.exists(args.folder):
-        self.log.warning('folder {} does not exist, exiting'.format(args.folder))
-        os._exit(1)
-    
-    mon = monitor_and_display(  args.ip,
-                                args.folder,
-                                args.port,
-                                period          = args.check,
-                                update_time     = args.update,
-                                include_fav     = args.favourite,
-                                sync            = args.sync,
-                                matte           = args.matte,
-                                sequential      = args.sequential,
-                                on              = args.on,
-                                token_file      = args.token_file)
-    await mon.start_monitoring()
-
+    log.info('This is a library for the web_interface, please run that instead')
 
 if __name__ == "__main__":
     try:

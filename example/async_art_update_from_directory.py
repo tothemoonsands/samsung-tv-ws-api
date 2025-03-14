@@ -329,7 +329,7 @@ class monitor_and_display:
         gets content_id list of category - either My Photos (MY-C0002) or Favourites (MY-C0004) from tv
         '''
         try:
-            result = [v['content_id'] for v in await self.tv.available(category)]
+            result = [v['content_id'] for v in await self.tv.available(category, timeout=10)]
         except AssertionError:
             self.log.warning('failed to get contents from TV')
             result = None

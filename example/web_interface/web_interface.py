@@ -7,12 +7,12 @@ import asyncio
 from flask import Flask, Response, jsonify, redirect, request, url_for, render_template
 from flask_bootstrap import Bootstrap5
 from pathlib import Path
-import argparse, os, json
+import argparse, os
 import logging
 
-__version__ = '0.0.1'
-
 from async_art_gallery_web import monitor_and_display
+
+__version__ = '1.0.0'
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,6 +26,7 @@ def parseargs():
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-u','--update', action="store", type=float, default=0, help='slideshow update period (mins) 0=off (default: %(default)s))')
     parser.add_argument('-c','--check', action="store", type=int, default=600, help='how often to check for new art 0=run once (default: %(default)s))')
+    parser.add_argument('-d','--display_for', action="store", type=int, default=120, help='how long to display manually selected art for (default: %(default)s))')
     parser.add_argument('-s','--sync', action='store_false', default=True, help='automatically syncronize (needs Pil library) (default: %(default)s))')
     parser.add_argument('-S','--sequential', action='store_true', default=False, help='sequential slide show (default: %(default)s))')
     parser.add_argument('-O','--on', action='store_true', default=False, help='exit if TV is off (default: %(default)s))')
@@ -42,35 +43,42 @@ def show_image(name):
     add image selected to queue for gallery display on TV
     '''
     log.info('show image: {}'.format(name))
-    mon.add_to_queue(name)
+    mon.display_file(name)
     return jsonify()
 
 @app.route('/')    
 def show_thumbnails():
     '''
     construct thumbnail page, and load all text data
-    pass to template as a disctionary
+    pass to template as a dictionary
     '''
     log.info('loading thumnail page')
-    data = {}
-    image_names = [img for img in os.listdir(app._static_folder) if not img.upper().endswith('.TXT')]
-    for id, file in enumerate(image_names):
-        #default info
-        data[file] = {"id": id,"header": "Wildlife Scene", "details": "A dramatic landscape"}
-        text_file = os.path.join(app._static_folder, Path(file).with_suffix(".TXT"))
-        try:
-            with open(text_file, 'r') as f:
-                text = json.load(f)
-            log.debug('got text for image: {}: {}'.format(file, text))
-            data[file].update(text)
-        except Exception as e:
-            log.warning('error: {}: {}'.format(e, text_file))
-        
+    image_names = [img for img in os.listdir(app.static_folder) if not img.upper().endswith('.TXT')]
+    data = {file: get_text(file, id) for id, file in enumerate(image_names)}    
     log.info('displaying: {}'.format(list(data.keys())))
     return render_template('home.html', data=data)
     
+def get_text(file, id):
+    '''
+    takes a image file name and numerical id, changes the extension to TXT, reads the file from the static folder
+    and returns a dictionary of the json
+    returns the default values if file not found
+    '''
+    #default info
+    data = {"id": id, "name": file, "header": "Wildlife Scene", "details": "A dramatic landscape"}
+    text_file = os.path.join(app.static_folder, Path(file).with_suffix(".TXT"))   
+    try:
+        with open(text_file, 'r') as f:
+            text = app.json.load(f)
+        log.debug('got text for image: {}: {}'.format(file, text))
+        data.update(text)
+    except Exception as e:
+        log.warning('error: {}: {}'.format(e, text_file))
+    return data
+    
 def run(args):
-    app._static_folder = args.folder
+    app.static_folder = args.folder
+    log.info('Serving files from: {}'.format(app.static_folder))
     app.run(host='0.0.0.0', port=args.port, debug=args.debug, use_reloader=False)
         
 async def main():
@@ -94,6 +102,7 @@ async def main():
                                 args.folder,
                                 period          = args.check,
                                 update_time     = args.update,
+                                display_for     = args.display_for,
                                 include_fav     = args.favourite,
                                 sync            = args.sync,
                                 matte           = args.matte,

@@ -232,7 +232,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         assert data
         return data
 
-    async def available(self, category=None, timeout=2):
+    async def available(self, category=None, timeout=4):
         '''
         category is 'MY-C0004' or 'MY-C0002' where 4 is favourites, 2 is my pictures, and 8 is store
         '''
