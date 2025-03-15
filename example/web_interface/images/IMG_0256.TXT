@@ -1,7 +1,7 @@
 {   
     "header"        : "This is snowy trees 1",
-    "description"   : "This is a scene with snowy trees 1",
-    "details"       : "This Scene shows a winter lanscape with snowy trees 1",
+    "description"   : "This is a <b>scene</b> with snowy trees 1",
+    "details"       : "The crimson finch is a species of bird in the family <i>Estrildidae</i>. It is found throughout Northern Australia as well as parts of southern New Guinea. <br>Crimson finches feature a distinctively bright crimson coat and are known for their aggression.",
     "time"          : "13:21",
     "location"      : "Canada 1"
 }

@@ -2,6 +2,8 @@
 # web frontend for gallery display
 # please install flask with the async option (pip install flask[async])
 # and bootstrap-flask (pip install Bootstrap-Flask)
+# V 1.0.0 14/3/25 NW Initial release
+# V 1.0.1 15/3/25 NW Added |safe filter in modal Marco for description and details
 
 import asyncio
 from flask import Flask, Response, jsonify, redirect, request, url_for, render_template
@@ -12,7 +14,7 @@ import logging
 
 from async_art_gallery_web import monitor_and_display
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 logging.basicConfig(level=logging.INFO)
 

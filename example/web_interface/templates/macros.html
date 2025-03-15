@@ -10,9 +10,9 @@
         </div>
         <div class="modal-body" id="modal-body">
           {% if value.description is defined %}
-            <p>{{ value.description }}</p>
+            <p>{{ value.description|safe }}</p>
           {% endif %}
-          {{ value.details }}
+          {{ value.details|safe }}
         </div>
         {% if value.location is defined and value.time is defined %}
           <div class="modal-footer">
