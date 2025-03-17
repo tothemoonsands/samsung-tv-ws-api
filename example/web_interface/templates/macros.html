@@ -12,11 +12,19 @@
           {% if value.description is defined %}
             <p>{{ value.description|safe }}</p>
           {% endif %}
-          {{ value.details|safe }}
+          <p>{{ value.details|safe }}</p>
+          {% if value.credit is defined %}
+            <p><b>Credit:</b> {{ value.credit }}</p>
+          {% endif %}
         </div>
-        {% if value.location is defined and value.time is defined %}
-          <div class="modal-footer">
-            Location: {{ value.location }} Time: {{ value.time }}
+        {% if value.location is defined or value.time is defined %}
+          <div class="modal-footer w-100">
+            {% if value.location is defined %}
+                <b>Location:</b> {{ value.location }}&nbsp;
+            {% endif %}
+            {% if value.time is defined %}
+                <b>Time:</b> {{ value.time }}
+            {% endif %}
           </div>
         {% endif %}
       </div>

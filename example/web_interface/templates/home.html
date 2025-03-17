@@ -3,26 +3,95 @@
 {% block scripts %}
 {{ super() }}
 <script type="text/javascript">
-    const timeout = 10000; //modeal timeout in mS
+    const kiosk = {{ kiosk }} //kiosk mode or not
+    var prevModal = null
+
+    window.onload = (event) => {
+        console.log("Window is fully loaded, kiosk mode", kiosk);
+        startSSE()
+    }
     
-    //refresh page
-    setTimeout("window.open(self.location, '_self');", 5*60000); //NOTE: period is passed in milliseconds
+    window.onscroll = function (e) {  
+        // called when the window is scrolled.
+        window.clearTimeout()
+        setTimeout(() => {scrollTop()}, 5*60000); //NOTE: period is passed in milliseconds        
+    }
     
-    //scroll to top on refresh
-    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-    document.body.scrollTop = 0; // For Safari
+    function scrollTop() {
+        //scroll to top of page
+        console.log('scrolling to top of page')
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        document.body.scrollTop = 0;            // For Safari
+    }
+    
+    function startSSE() {
+            //get current displayed image id and other events
+            console.log('SSE starting')
+            var evtSource = new EventSource("/SSE")
+            evtSource.onopen = () => {
+                console.log('SSE connected')
+            }
+            evtSource.onerror = (error) => {
+                console.error('SSE failed', error)
+                //evtSource.close()
+            }
+            evtSource.addEventListener('refresh', function (e) {
+                console.log('SSE refresh: ', e.data);
+                window.open(self.location, '_self')
+            });
+            evtSource.addEventListener('power', function (e) {
+                console.log('SSE power: ', e.data);
+                hidePrevModal()
+                prevModal = null
+            });
+            evtSource.addEventListener('message', function (e) {
+                console.log('SSE image id: ', e.data)
+                var modalWindow = 'textModal-'+e.data
+                if (kiosk) {
+                    displayModal(modalWindow)
+                } else {
+                    isDuplicateAndHide(modalWindow)
+                }
+            });
+        }
+        
+    function hidePrevModal() {
+        if (prevModal !== null) {
+            console.log("hiding previous modal: ", prevModal._element.id)
+            prevModal.hide()
+        }
+    }
+    
+    function isDuplicateAndHide(modalWindow) {
+        if (prevModal !== null) {
+            if (prevModal._element.id == modalWindow) { 
+                console.log("NOT Displaying duplicate text for: ", modalWindow)
+                return true
+            }
+            hidePrevModal()
+        }
+        return false
+    }
     
     function showImage(name, modalWindow) {
         //show modal, and trigger display on TV using ajax fetch
-        console.log("Show Image on TV: ", name);
-        const url = '/show_image/' + name;
+        prevModal = null
+        displayModal(modalWindow);
+        console.log("Show Image on TV: ", name)
+        const url = '/show_image/' + name
         fetch(url).catch((error) => console.log('Fetch error: ', error))
-        var myModal = new bootstrap.Modal(document.getElementById(modalWindow), {})
-        myModal.show()
-        setTimeout(function(){
-            myModal.hide()
-        }, timeout);
     }
+    
+    function displayModal(modalWindow) {
+        console.log('displaying modal: ', modalWindow)
+        if (!isDuplicateAndHide(modalWindow)) {
+            var myModal = new bootstrap.Modal(document.getElementById(modalWindow), {})
+            prevModal = myModal
+            console.log("Displaying text for: ", modalWindow);
+            myModal.show()
+        }
+    }
+    
 </script>
 {% endblock %}
 {% block content %}

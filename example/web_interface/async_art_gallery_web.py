@@ -205,7 +205,9 @@ class monitor_and_display:
         self.start = time.time()
         self.skip = time.time() - self.display_for
         self.current_content_id = None
+        self.prev_filename = None
         self.loop = None
+        self.updated = True
         self.pil = PIL_methods(self)
         self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=self.token_file)
         try:
@@ -490,9 +492,9 @@ class monitor_and_display:
         
     def get_next_art(self):
         '''
-        get next content_id from list, set current_content_id or return None is no list
+        get next content_id from list (excluding current content id), set current_content_id or return None if no list
         '''
-        content_ids = self.get_content_ids()
+        content_ids = [id for id in self.get_content_ids() if id != self.current_content_id]
         if content_ids:
             content_id = self.next_value(self.current_content_id, content_ids) if self.sequential else random.choice(content_ids)
             return content_id
@@ -521,20 +523,66 @@ class monitor_and_display:
         '''
         Display file (jpg/png) called from another thread - ie web_interface
         '''
-        if self.loop:
+        if self.loop:   #if loop is running
             self.log.info('displaying: {}'.format(filename))
             asyncio.run_coroutine_threadsafe(self.set_image_from_filename(filename), self.loop)
         else:
             self.log.warning('no running loop to display: {}'.format(filename))
             
     async def set_image_from_filename(self, filename):
+        '''
+        set image on TV from filename, and pause auto rotation
+        '''
         try:
             content_id = self.uploaded_files[filename]['content_id']
             self.skip = time.time()
             self.start = 0
             await self.change_art(content_id)
-        except Exception:
-            self.log.warning('file: {} not found on TV'.format(filename))
+        except Exception as e:
+            self.log.warning('error: {}, file: {}'.format(e, filename))
+
+    def wait_for_filename_change(self):
+        '''
+        call async generator from sync function
+        '''
+        #async generator
+        self.prev_filename = None   #so we get initial value
+        ait = self.filename_changed().__aiter__()
+        async def get_next():
+            return await anext(ait) #.__anext__()
+        while True:
+            if self.loop:   #if loop is running
+                obj = asyncio.run_coroutine_threadsafe(get_next(), self.loop).result()
+                yield obj
+            else:
+                yield 'off'
+        
+    async def filename_changed(self):
+        '''
+        async generator that yields changed filename or 'off'
+        '''
+        while True:
+            if self.updated:
+                self.updated = False
+                self.prev_filename = None
+                yield 'refresh'
+            else:
+                filename = await self.get_current_filename()
+                if filename != self.prev_filename:
+                    self.prev_filename = filename
+                    self.log.info('returning: {}'.format(filename))
+                    yield filename
+            await asyncio.sleep(1)
+            
+    async def get_current_filename(self):
+        '''
+        return current filename for displayed image on TV or 'off'
+        '''
+        if await self.tv.in_artmode():
+            for filename, value in self.uploaded_files.items():
+                if value['content_id'] == self.current_content_id:
+                    return filename
+        return 'off'
     
     async def check_dir(self):
         '''
@@ -545,9 +593,11 @@ class monitor_and_display:
                 self.log.info('checking directory: {}{}'.format(self.folder, ' every {}'.format(self.get_time(self.period)) if self.period else ''))
                 files = self.get_folder_files()
                 await self.sync_file_list()
-                await self.remove_files(files)
-                await self.add_files(files)
-                await self.update_files(files)
+                self.updated = any([
+                    await self.remove_files(files),
+                    await self.add_files(files),
+                    await self.update_files(files),
+                ])
                 #update tv art if enabled by timer or skip if manually selected
                 if time.time() - self.skip <= self.display_for:
                     return
