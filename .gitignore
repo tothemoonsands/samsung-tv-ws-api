@@ -141,6 +141,7 @@ _development/
 
 # examples
 example/uploaded_files.json
+example/web_interface/uploaded_files.json
 example/images/
 example/slideshow/
 example/test.py
