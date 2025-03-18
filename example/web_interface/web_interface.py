@@ -4,9 +4,10 @@
 # and bootstrap-flask (pip install Bootstrap-Flask)
 # V 1.0.0 14/3/25 NW Initial release
 # V 1.0.1 15/3/25 NW Added |safe filter in modal Marco for description and details
+# V 1.1.1 18/3/25 NW updated to load modal dialog on demand
 
 import asyncio
-from flask import Flask, Response, jsonify, redirect, request, url_for, render_template
+from flask import Flask, Response, jsonify, redirect, request, url_for, render_template, get_template_attribute
 from flask_bootstrap import Bootstrap5
 from pathlib import Path
 import argparse, os, time
@@ -14,7 +15,7 @@ import logging
 
 from async_art_gallery_web import monitor_and_display
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 data = {}
 
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +31,9 @@ def parseargs():
     parser.add_argument('-u','--update', action="store", type=float, default=0, help='slideshow update period (mins) 0=off (default: %(default)s))')
     parser.add_argument('-c','--check', action="store", type=int, default=600, help='how often to check for new art 0=run once (default: %(default)s))')
     parser.add_argument('-d','--display_for', action="store", type=int, default=120, help='how long to display manually selected art for (default: %(default)s))')
+    parser.add_argument('-mo','--modal', default='', choices=['modal-sm', 'modal-lg', 'modal-xl', 'modal-fullscreen', 'modal-fullscreen-sm-down',
+                                                              'modal-fullscreen-md-down', 'modal-fullscreen-lg-down', 'modal-fullscreen-xl-down', 'modal-fullscreen-xxl-down'],
+                                         help='size of modal text box see https://www.w3schools.com/bootstrap5/bootstrap_modal.php for explanation (default: medium')
     parser.add_argument('-s','--sync', action='store_false', default=True, help='automatically syncronize (needs Pil library) (default: %(default)s))')
     parser.add_argument('-K','--kiosk', action='store_true', default=False, help='Show in Kiosk mode (default: %(default)s))')
     parser.add_argument('-S','--sequential', action='store_true', default=False, help='sequential slide show (default: %(default)s))')
@@ -50,6 +54,15 @@ def show_image(name):
     mon.display_file(name)
     return {}, 200
     
+@app.route("/modal/<file>")
+def show_modal(file):
+    '''
+    build html for bootstrap modal from template
+    '''
+    text = get_text(file)
+    modal_window = get_template_attribute('macros.html', 'render_modal')
+    return modal_window(text, args.modal)
+    
 @app.route('/SSE')
 def SSE():
     '''
@@ -58,16 +71,12 @@ def SSE():
     return Response(stream(), mimetype='text/event-stream')
     
 def stream():
-    ev = {'off':'power'}
     log.info('starting stream')
     try:
         filename = mon.wait_for_filename_change()  # filename change generator
         while True:
             file = next(filename)  # blocks until a new filename arrives
-            if file in data.keys():
-                yield format_sse(data[file]['id'])
-            else:
-                yield format_sse(file, ev.get(file, file))
+            yield format_sse(file)
     except Exception as e:
         log.warning('stream exited: {}'.format(e))
     
@@ -84,9 +93,8 @@ def show_thumbnails():
     global data
     log.info('loading thumnail page')
     image_names = [img for img in os.listdir(app.static_folder) if not img.upper().endswith('.TXT')]
-    data = {file: get_text(file) for file in image_names}    
-    log.info('displaying: {}'.format(list(data.keys())))
-    return render_template('home.html', data=data, kiosk=str(args.kiosk).lower())
+    log.info('displaying Buttons for: {}'.format(image_names))
+    return render_template('home.html', names=image_names, kiosk=str(args.kiosk).lower())
     
 def get_text(file):
     '''
@@ -109,7 +117,7 @@ def get_text(file):
 def run(args):
     app.static_folder = args.folder
     log.info('Serving files from: {}'.format(app.static_folder))
-    app.run(host='0.0.0.0', port=args.port, debug=args.debug, use_reloader=False)
+    app.run(host='0.0.0.0', port=args.port, debug=args.debug, use_reloader=False, threaded=True)
         
 async def main():
     global log

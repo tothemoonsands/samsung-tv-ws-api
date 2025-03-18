@@ -555,6 +555,7 @@ class monitor_and_display:
                 obj = asyncio.run_coroutine_threadsafe(get_next(), self.loop).result()
                 yield obj
             else:
+                self.log.warning('No loop')
                 yield 'off'
         
     async def filename_changed(self):
@@ -566,6 +567,7 @@ class monitor_and_display:
                 self.updated = False
                 self.prev_filename = None
                 yield 'refresh'
+                await asyncio.sleep(10) #wait for browser to refresh
             else:
                 filename = await self.get_current_filename()
                 if filename != self.prev_filename:
