@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # fully async example library to monitor a folder and upload/display on Frame TV using a web page for control
 # NOTE: install Pillow (pip install Pillow) to automatically syncronize art on TV wth uploaded_files.json.
-# this library is based on async_art_upload_from_directory.py, but with an added web front end based on flask.
+# this library is based on async_art_upload_from_directory.py, but with an added web front end based on quart.
 # do not run it directly, use web_interface.py instead
 
 '''
@@ -206,7 +206,6 @@ class monitor_and_display:
         self.skip = time.time() - self.display_for
         self.current_content_id = None
         self.prev_filename = None
-        self.loop = None
         self.updated = True
         self.pil = PIL_methods(self)
         self.tv = SamsungTVAsyncArt(host=self.ip, port=8002, token_file=self.token_file)
@@ -221,7 +220,6 @@ class monitor_and_display:
         '''
         program entry point
         '''
-        self.loop = asyncio.get_running_loop()
         if self.on and not await self.tv.on():
             self.log.info('TV is off, exiting')
         else:
@@ -241,7 +239,8 @@ class monitor_and_display:
         exit on signal
         '''
         self.log.info('SIGINT/SIGTERM received, exiting')
-        os._exit(1)
+        raise SystemExit('cancelled')
+        #os._exit(1)
         
     async def get_api_version(self):
         '''
@@ -351,7 +350,7 @@ class monitor_and_display:
         '''
         with open(self.program_data_path, 'w') as f:
             program_data = {'last_update': self.start, 'uploaded_files': self.uploaded_files}
-            json.dump(program_data, f)
+            json.dump(program_data, f, indent=2)
             
     def read_file(self, filename):
         '''
@@ -519,16 +518,6 @@ class monitor_and_display:
         else:
             self.log.info('skipping art update, as new content_id: {} is the same as currently shown'.format(content_id))
             
-    def display_file(self, filename):
-        '''
-        Display file (jpg/png) called from another thread - ie web_interface
-        '''
-        if self.loop:   #if loop is running
-            self.log.info('displaying: {}'.format(filename))
-            asyncio.run_coroutine_threadsafe(self.set_image_from_filename(filename), self.loop)
-        else:
-            self.log.warning('no running loop to display: {}'.format(filename))
-            
     async def set_image_from_filename(self, filename):
         '''
         set image on TV from filename, and pause auto rotation
@@ -540,23 +529,6 @@ class monitor_and_display:
             await self.change_art(content_id)
         except Exception as e:
             self.log.warning('error: {}, file: {}'.format(e, filename))
-
-    def wait_for_filename_change(self):
-        '''
-        call async generator from sync function
-        '''
-        #async generator
-        self.prev_filename = None   #so we get initial value
-        ait = self.filename_changed().__aiter__()
-        async def get_next():
-            return await anext(ait) #.__anext__()
-        while True:
-            if self.loop:   #if loop is running
-                obj = asyncio.run_coroutine_threadsafe(get_next(), self.loop).result()
-                yield obj
-            else:
-                self.log.warning('No loop')
-                yield 'off'
         
     async def filename_changed(self):
         '''
@@ -567,7 +539,6 @@ class monitor_and_display:
                 self.updated = False
                 self.prev_filename = None
                 yield 'refresh'
-                await asyncio.sleep(10) #wait for browser to refresh
             else:
                 filename = await self.get_current_filename()
                 if filename != self.prev_filename:
@@ -576,22 +547,34 @@ class monitor_and_display:
                     yield filename
             await asyncio.sleep(1)
             
-    async def get_current_filename(self):
+    async def get_current_filename(self, direct=False):
         '''
         return current filename for displayed image on TV or 'off'
         '''
-        if await self.tv.in_artmode():
+        if await self.tv_in_artmode():
+            if direct or self.current_content_id is None:
+                self.current_content_id = await self.get_current_artwork()
             for filename, value in self.uploaded_files.items():
                 if value['content_id'] == self.current_content_id:
+                    if direct:
+                        self.prev_filename = filename
                     return filename
+            await asyncio.sleep(10)
         return 'off'
+        
+    async def tv_in_artmode(self):
+        try:
+            return await self.tv.in_artmode()
+        except AssertionError as e:
+            self.log.warning('AssertionError error: {} returning: {}'.format(e, self.tv.art_mode))
+        return self.tv.art_mode
     
     async def check_dir(self):
         '''
         scan folder for new, deleted or updated files, but only when tv is in art mode
         '''
         try:
-            if await self.tv.in_artmode():
+            if await self.tv_in_artmode():
                 self.log.info('checking directory: {}{}'.format(self.folder, ' every {}'.format(self.get_time(self.period)) if self.period else ''))
                 files = self.get_folder_files()
                 await self.sync_file_list()

@@ -5,20 +5,18 @@
     const kiosk = {{ kiosk }} //kiosk mode or not
     var prevModal = null
     var evtSource = null
-    var ignoreUpdate = false
     var scrollTimer = null
-    var ignoreTimer = null
+    var wsTimer = null
+    var ws = null
 
     window.onload = (event) => {
         console.log("Window is fully loaded, kiosk mode", kiosk);
-        startSSE()
+        startWS()
     }
     
     window.onscroll = function (e) {  
         // called when the window is scrolled.
-        if (scrollTimer !== null) {
-            clearTimeout(scrollTimer)
-        }
+        clearTimeout(scrollTimer)
         if (window.scrollY) {
             scrollTimer = setTimeout(() => {scrollTop()}, 5*60000); //NOTE: period is passed in milliseconds 
         }        
@@ -34,41 +32,89 @@
         }
     }
     
-    function startSSE() {
-            //get current displayed image id and other events
-            console.log('SSE starting')
-            evtSource = new EventSource("/SSE")
-            evtSource.onopen = () => {
-                console.log('SSE connected')
-            }
-            evtSource.onerror = (error) => {
-                console.error('SSE failed', error)
-                //evtSource.close()
-            }
-            evtSource.addEventListener('message', function (e) {
-                console.log('SSE received: ', e.data);
-                switch(e.data) {
-                    case 'off':
-                        hidePrevModal()
-                        prevModal = null
-                        break;
-                    case 'refresh':
-                        window.open(self.location, '_self')
-                        break;
-                    default:
-                        if (ignoreUpdate) {
-                            console.log('ignoring update: ', e.data)
-                        } else if (kiosk) {
-                            displayModal(e.data)
-                        }
-                }
-            });
+    function startWS() {
+        // Create WebSocket connection.
+        console.log('Connecting Websocket')
+        ws = new WebSocket("/ws");
+        ws.onopen = (event) => {
+            clearTimeout(wsTimer)
+            console.log('%cWebsocket open', "color: green")
         }
+        ws.onclose = (event) => {
+            console.log("%cWebsocket closed", "color: red");
+            hidePrevModal(true)
+            // restart websocket connection
+            wsTimer = setTimeout(function() {
+                startWS();
+            }, 10000);
+        }
+        ws.onerror = (event) => {
+            console.log("%cWebSocket error: %s", "color: red", event);
+            ws.close()
+        }
+        // Listen for messages
+        ws.onmessage = (event) => {
+            //console.log("Message from WS ", event.data);
+            var obj = JSON.parse(event.data)
+            switch(obj.type) {
+                case 'update':
+                    console.log("got display update ", obj.name);
+                    switch(obj.name) {
+                        case 'off':
+                            hidePrevModal(true)
+                            break;
+                        case 'refresh':
+                            //reload page
+                            window.open(self.location, '_self')
+                            break;
+                        default:
+                            if (kiosk) {
+                                displayModal(obj.name)
+                            } else {
+                                hidePrevModal(true)
+                            }
+                    }
+                    break;
+                case 'modal':
+                    console.log("got modal update ", obj.name);
+                    renderModal(obj.name, obj.modal)
+                    break;
+                default:
+                    console.log('%cobject type: %s not found', "color: red", obj.type)
+            }
+        }
+    }
+    
+    function wsSend(type, name) {
+        if (ws !== null) {
+            console.log("%cWS send: type: %s name: %s", "color: blue", type, name)
+            const msg = {
+                type: type,
+                name: name,
+              };
+            ws.send(JSON.stringify(msg))
+        }
+    }
+    
+    function renderModal(name, modal) {  
+        hidePrevModal()
+        if (name !='none') {
+            document.getElementById('modal').innerHTML=modal
+            var modalWindow = getModalWindow(name)
+            var myModal = new bootstrap.Modal(document.getElementById(modalWindow), {})
+            prevModal = myModal
+            console.log("Displaying text for: ", modalWindow);
+            myModal.show()
+        }
+    }
         
-    function hidePrevModal() {
+    function hidePrevModal(del=false) {
         if (prevModal !== null) {
             console.log("hiding previous modal: ", prevModal._element.id)
             prevModal.hide()
+            if (del) {
+                prevModal = null
+            }
         }
     }
     
@@ -87,43 +133,18 @@
         return 'textModal-'+name.substring(0, name.lastIndexOf('.')) || name
     }
     
-    function setIgnore(set) {
-        ignoreUpdate = set
-        console.log('ignoreUpdate set to: ', set)
-        if (ignoreTimer !== null) {
-            clearTimeout(ignoreTimer)
-        }
-        if (set) {
-            ignoreTimer = setTimeout(() => {setIgnore(false)}, 10*1000);
-        }
-    }
-    
     function showImage(name) {
         //show modal, and trigger display on TV using ajax fetch
         prevModal = null
-        setIgnore(true)
         displayModal(name);
-        console.log("Show Image on TV: ", name)
-        const url = '/show_image/' + name
-        fetch(url).catch((error) => console.log('Fetch error: ', error))
+        console.log("%cShow Image on TV: %s", "color: green", name)
+        wsSend('display', name)
     }
     
     function displayModal(name) {
         if (!isDuplicate(name)) {
-            console.log('displaying modal: ', name)
-            const url = '/modal/' + name
-            fetch(url)
-            .then((response) => response.text())
-            .then((text) => {
-                    document.getElementById('modal').innerHTML=text;
-                    hidePrevModal()
-                    var modalWindow = getModalWindow(name)
-                    var myModal = new bootstrap.Modal(document.getElementById(modalWindow), {})
-                    prevModal = myModal
-                    console.log("Displaying text for: ", modalWindow);
-                    myModal.show()
-                })
-            .catch((error) => console.log('Modal Window Fetch error: ', error))
+            console.log('requesting modal for: ', name)
+            wsSend('modal', name)
         }
     }
     

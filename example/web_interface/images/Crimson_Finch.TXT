@@ -2,7 +2,7 @@
     "header"        : "Crimson Finch at Fogg Dam",
     "description"   : "<i>Neochmia phaeton</i>",
     "details"       : "The <b>Crimson Finch</b> is a species of bird in the family <i>Estrildidae</i>. It is found throughout Northern Australia as well as parts of southern New Guinea.<br>Crimson finches feature a distinctively bright crimson coat and are known for their aggression.",
-    "time"          : "2023-09-03 9:47 AM",
-    "location"      : "Fogg Dam",
+    "time"          : "",
+    "location"      : "",
     "credit"        : "wildfoto.au"
 }

@@ -1,6 +1,6 @@
  {% macro render_modal(value, size) %}
   <!-- Modal -->
-  <div class="modal fade" id="textModal-{{value.id}}" tabindex="-1" aria-labelledby="DisplayImage" aria-hidden="false">
+  <div class="modal fade" id="textModal-{{value.id}}" tabindex="-1" aria-labelledby="DisplayImage">
     <div class="modal-dialog modal-dialog-centered {{ size }}" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -13,17 +13,17 @@
             <p>{{ value.description|safe }}</p>
           {% endif %}
           <p>{{ value.details|safe }}</p>
-          {% if value.credit is defined %}
-            <p><b>Credit:</b> {{ value.credit }}</p>
-          {% endif %}
         </div>
-        {% if value.location is defined or value.time is defined %}
-          <div class="modal-footer w-100">
-            {% if value.location is defined %}
-                <b>Location:</b> {{ value.location }}&nbsp;
+        {% if value.location is defined or value.time is defined or value.credit is defined %}
+          <div class="modal-footer">
+            {% if value.credit is defined and value.credit %}
+                <span class="float-left"><b>Credit:</b> {{ value.credit }}</span>
             {% endif %}
-            {% if value.time is defined %}
-                <b>Time:</b> {{ value.time }}
+            {% if value.location is defined and value.location %}
+                <span class="ms-auto"><b>Location:</b> {{ value.location }}</span>
+            {% endif %}
+            {% if value.time is defined and value.time %}
+                <span><b>Time:</b> {{ value.time }}</span>
             {% endif %}
           </div>
         {% endif %}

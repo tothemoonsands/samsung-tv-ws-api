@@ -71,6 +71,7 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         self._rest_api: Optional[SamsungTVAsyncRest] = None
         self.art_mode = None
         self.session = None
+        self.lock = asyncio.Lock()
         self.pending_requests = {}
         self.callbacks = {}
         self.get_token()
@@ -194,8 +195,9 @@ class SamsungTVAsyncArt(SamsungTVWSAsyncConnection):
         
     async def _get_device_info(self):
         try:
-            await asyncio.sleep(0.1)    #do not hit rest api to frequently
-            return await self._get_rest_api().rest_device_info()
+            async with self.lock:
+                await asyncio.sleep(0.1)    #do not hit rest api to frequently
+                return await self._get_rest_api().rest_device_info()
         except Exception as e:
             pass
         return {}
