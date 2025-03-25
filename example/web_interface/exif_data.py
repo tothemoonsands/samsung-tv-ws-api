@@ -106,7 +106,7 @@ class ExifData:
                 
     def _convert_to_degrees(self, value):
         '''
-        Helper function to convert the GPS coordinates stored in the EXIF to degress in float format
+        Helper function to convert the GPS coordinates stored in the EXIF to degrees in float format
         '''
         if value:
             val = [(lambda x,y: float(x/y))(*x) if isinstance(x, tuple) else x for x in value]

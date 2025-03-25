@@ -142,6 +142,7 @@ _development/
 # examples
 example/uploaded_files.json
 example/web_interface/uploaded_files.json
+example/web_interface/gps_data.json
 example/images/
 example/slideshow/
 example/test.py
