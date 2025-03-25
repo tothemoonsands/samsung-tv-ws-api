@@ -18,6 +18,7 @@ try:
     from geopy.geocoders import Nominatim
     from geopy.adapters import AioHTTPAdapter
     from geopy.extra.rate_limiter import AsyncRateLimiter
+    from geopy.exc import GeocoderTimedOut
     HAVE_GEOPY=True
 except ImportError:
     pass
@@ -121,16 +122,23 @@ class ExifData:
         '''
         if HAVE_GEOPY:
             self.load_data()
-            async with Nominatim(user_agent="{}-SamsungtvwsGetLocGallery".format(self.ip or ''), adapter_factory=AioHTTPAdapter) as geolocator:
-                reverse  = AsyncRateLimiter(geolocator.reverse, min_delay_seconds=1)
+            async with Nominatim(user_agent="{}-SamsungtvwsGetLocGallery".format(self.ip or ''), timeout=20, adapter_factory=AioHTTPAdapter) as geolocator:
+                reverse  = AsyncRateLimiter(geolocator.reverse, min_delay_seconds=1.5, max_retries=1, swallow_exceptions=False)
                 for file in file_list:
                     if 'GEOPY_Address' not in self.exif[file].keys():
                         lat, lng = self.get_lat_long(file)
                         if lat and lng:
                             self.log.info('{}: getting GPS data'.format(file))
-                            locname = await reverse(f"{lat}, {lng}")
-                            self.exif[file]['GEOPY_Address'] = self.format_address(file, locname)
+                            try:
+                                locname = await reverse(f"{lat}, {lng}")
+                                if locname:
+                                    self.exif[file]['GEOPY_Address'] = self.format_address(file, locname)
+                                
+                            except (asyncio.exceptions.TimeoutError, GeocoderTimedOut) as e:
+                                self.log.warning('geocode failed on {}: {}'.format(file, e))
+                                await asyncio.sleep(5)
                             continue
+                        self.log.info('{}: NO address found'.format(file))
                         self.exif[file]['GEOPY_Address'] = None
             self.save_data()
            
@@ -138,14 +146,16 @@ class ExifData:
         '''
         format address so it fits in modal footer
         '''
-        self.log.debug('{}: location: {}'.format(file, locname.raw))
-        if len(locname.address) <= 40:
-            return locname.address
-        addr = [locname.raw['address'].get('village'),
-                locname.raw['address'].get('city_district'),
-                locname.raw['address'].get('territory'),
-                locname.raw['address'].get('country')]
-        address = ('{}'.format(', '.join([a for a in addr if a])))
+        try:
+            self.log.debug('{}: location: {}'.format(file, locname.raw))
+            addr = [locname.raw['address'].get('village'),
+                    locname.raw['address'].get('city_district'),
+                    locname.raw['address'].get('territory'),
+                    locname.raw['address'].get('country')]
+            address = ('{}'.format(', '.join([a for a in addr if a])))
+            address
+        except Exception as e:
+            address = locname.address
         self.log.info('{}: address: {}'.format(file, address))
         return address
         
