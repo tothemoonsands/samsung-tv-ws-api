@@ -36,10 +36,10 @@ cd samsung-tv-ws-api
 Now run install:
 
 ```
-python ./setup.py install
+sudo pip install --editable .
 ```
-You can substitute `develop` for `install` if you want to install in developer mode.   
-**NOTE:** setuptools is deprecated (in favour of pip), but you can still use it for now. 
+You can leave `--editable` out if you don't want to install in developer mode.   
+**NOTE:** setuptools is deprecated (in favour of pip). 
 
 You can also install directly from git using pip (your command may be `pip` or `pip3` depending on your setup):
 
@@ -47,7 +47,7 @@ You can also install directly from git using pip (your command may be `pip` or `
 pip install git+https://github.com/NickWaterton/samsung-tv-ws-api.git
 ```
 
-Or from the git clone:
+Or from the git clone (you may need `sudo pip install` for some installs):
 
 ```bash
 git clone https://github.com/NickWaterton/samsung-tv-ws-api.git
