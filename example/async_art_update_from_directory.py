@@ -520,17 +520,20 @@ class monitor_and_display:
                 
     def get_content_ids(self):
         '''
-        return list of all content ids available for selecting to display
+        return list of all content ids available for selecting to display NOTE sets() are not ordered
+        if not including favourites, order list by filename in self.uploaded_files
         '''
-        return list({v['content_id'] for v in self.uploaded_files.values()}.union(self.fav))
+        if self.fav:
+            return list({v['content_id'] for v in self.uploaded_files.values()}.union(self.fav))
+        return [v['content_id'] for k, v in sorted(self.uploaded_files.items())]
         
     def get_next_art(self):
         '''
-        get next content_id from list, set current_content_id or return None is no list
+        get next content_id from list (excluding current content id), set current_content_id or return None if no list
         '''
-        content_ids = self.get_content_ids()
+        content_ids = [id for id in self.get_content_ids() if id != self.current_content_id]
         if content_ids:
-            content_id = self.next_value(self.current_content_id, content_ids) if self.sequential else random.choice(content_ids)
+            content_id = self.next_value(self.current_content_id, self.get_content_ids()) if self.sequential else random.choice(content_ids)
             return content_id
         return None
         
