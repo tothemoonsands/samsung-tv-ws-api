@@ -1,5 +1,7 @@
+import argparse
 import asyncio
 import logging
+import os
 
 import aiohttp
 
@@ -7,22 +9,26 @@ from samsungtvws.encrypted.remote import SamsungTVEncryptedWSAsyncRemote, SendRe
 
 logging.basicConfig(level=logging.DEBUG)
 
-HOST = "1.2.3.4"
-PORT = 8000  # Warning: this can be different from the authenticator port
 
-TOKEN = "b231074ae524245f4dd581154c112936"
-SESSION_ID = "1"
+def parseargs() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", default=os.environ.get("TV_IP", "1.2.3.4"))
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--token", default=os.environ.get("TV_TOKEN"))
+    parser.add_argument("--session_id", default="1")
+    return parser.parse_args()
 
 
 async def main() -> None:
-    """Get token."""
+    """Run remote commands."""
+    args = parseargs()
     async with aiohttp.ClientSession() as web_session:
         remote = SamsungTVEncryptedWSAsyncRemote(
-            host=HOST,
+            host=args.ip,
             web_session=web_session,
-            token=TOKEN,
-            session_id=SESSION_ID,
-            port=PORT,
+            token=args.token,
+            session_id=args.session_id,
+            port=args.port,
         )
         await remote.start_listening()
 

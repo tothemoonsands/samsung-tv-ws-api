@@ -12,11 +12,12 @@ from samsungtvws import SamsungTVWS  # noqa: E402
 logging.basicConfig(level=logging.INFO)
 
 # Normal constructor
-tv = SamsungTVWS("192.168.xxx.xxx")
+ip = os.environ.get("TV_IP", "192.168.xxx.xxx")
+tv = SamsungTVWS(ip)
 
 # Autosave token to file
 token_file = os.path.dirname(os.path.realpath(__file__)) + "/tv-token.txt"
-tv = SamsungTVWS(host="192.168.xxx.xxx", port=8002, token_file=token_file)
+tv = SamsungTVWS(host=ip, port=8002, token_file=token_file)
 
 # Toggle power
 tv.shortcuts().power()

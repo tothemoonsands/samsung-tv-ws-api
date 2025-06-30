@@ -75,7 +75,12 @@ logging.basicConfig(level=logging.INFO)
 def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Async Upload images to Samsung TV Version: {}'.format(__version__))
-    parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument(
+        'ip',
+        nargs='?',
+        default=os.environ.get('TV_IP'),
+        help='ip address of TV (default: env TV_IP)'
+    )
     parser.add_argument('-f','--folder', action="store", type=str, default="./images", help='folder to load images from (default: %(default)s))')
     parser.add_argument('-m','--matte', action="store", type=str, default="none", help='default matte to use (default: %(default)s))')
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')

@@ -7,10 +7,10 @@ import websockets
 
 from samsungtvws.remote import SamsungTVWS
 
-TV_IP = "192.168.0.X"
+TV_IP = os.environ.get("TV_IP", "192.168.0.X")
 
 if "X" in TV_IP:
-    raise ValueError("Please set the IP address of your TV in the TV_IP variable")
+    raise ValueError("Please set the IP address of your TV in the TV_IP variable or the TV_IP environment variable")
 
 token_file = os.path.dirname(os.path.realpath(__file__)) + "/tv-token.txt"
 tv = SamsungTVWS(host=TV_IP, port=8002, token_file=token_file)

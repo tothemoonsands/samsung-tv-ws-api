@@ -1,17 +1,31 @@
+import argparse
 import asyncio
 import logging
+import os
 
 from samsungtvws.async_remote import SamsungTVWSAsyncRemote
 from samsungtvws.remote import SendRemoteKey
 
 logging.basicConfig(level=logging.DEBUG)
 
-host = "1.2.3.4"
-port = 8002
+
+def parseargs() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", default=os.environ.get("TV_IP", "1.2.3.4"))
+    parser.add_argument("--port", type=int, default=8002)
+    parser.add_argument("--token", default=os.environ.get("TV_TOKEN"))
+    parser.add_argument("--token_file", default="token_file")
+    return parser.parse_args()
 
 
-async def main():
-    tv = SamsungTVWSAsyncRemote(host=host, port=port, token_file="token_file")
+async def main() -> None:
+    args = parseargs()
+    tv = SamsungTVWSAsyncRemote(
+        host=args.ip,
+        port=args.port,
+        token=args.token,
+        token_file=args.token_file,
+    )
     await tv.start_listening()
 
     # Request app_list

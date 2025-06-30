@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import argparse
+import os
 from pathlib import Path
 from signal import SIGTERM, SIGINT
 
@@ -114,7 +115,12 @@ class EnsureArtMode:
 def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Example async ensure art mode Samsung Frame TV Version: {}'.format(__version__))
-    parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument(
+        'ip',
+        nargs='?',
+        default=os.environ.get('TV_IP'),
+        help='ip address of TV (default: env TV_IP)'
+    )
     parser.add_argument('-p','--period', action="store", type=int, default=15, help='How often to check in seconds (default: %(default)s))')
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-D','--debug', action='store_true', default=False, help='Debug mode (default: %(default)s))')
