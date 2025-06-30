@@ -14,7 +14,12 @@ from samsungtvws.exceptions import ResponseError
 def parseargs():
     # Add command line argument parsing
     parser = argparse.ArgumentParser(description='Async Change Mats for art on Samsung TV Version: {}'.format(__version__))
-    parser.add_argument('ip', action="store", type=str, default=None, help='ip address of TV (default: %(default)s))')
+    parser.add_argument(
+        'ip',
+        nargs='?',
+        default=os.environ.get('TV_IP'),
+        help='ip address of TV (default: env TV_IP)'
+    )
     parser.add_argument('-t','--token_file', action="store", type=str, default="token_file.txt", help='default token file to use (default: %(default)s))')
     parser.add_argument('-m','--mat', action="store", type=str, default='none', help='landscape mat to apply to art (default: %(default)s))')
     parser.add_argument('-A','--all', action='store_true', default=False, help='Apply to all art - usually just My-Photos (default: %(default)s))')

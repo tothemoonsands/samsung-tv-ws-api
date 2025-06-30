@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 sys.path.append("../")
@@ -8,8 +9,10 @@ from samsungtvws import SamsungTVWS  # noqa: E402
 # Increase debug level
 logging.basicConfig(level=logging.INFO)
 
+ip = os.environ.get("TV_IP", "192.168.xxx.xxx")
+
 # Normal constructor
-tv = SamsungTVWS("192.168.xxx.xxx")
+tv = SamsungTVWS(ip)
 
 # Set all mats to this type
 target_matte_type = "none"
